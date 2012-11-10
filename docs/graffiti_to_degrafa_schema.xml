@@ -1,0 +1,38 @@
+<degrafa:Surface>
+  <degrafa:fills>
+            <paint:SolidFill    id="blue"
+                                color="#62ABCD"
+                                alpha=".6"/>
+        </degrafa:fills>
+		 <degrafa:strokes>
+            <paint:SolidStroke    id="white"
+                                color="#FFFFFF"
+                                weight="8"
+                                alpha=".6"/>
+        </degrafa:strokes>
+
+  <degrafa:GeometryGroup id="" x="" y="">
+    <Path id="path2172" stroke="{gradientStrokes0}" data="M90,59.0818L90,91.6864C90,121.7773,38,121.7773,38,91.6864L38,32C38,7.9273,74.2487,7.9273,74.2487,32L74.2487,72.6227C60.9973,90.6773,67.4973,90.6773,54.246,72.6227L54.246,62.0909">
+      <filters>
+        <flashfilters:BlurFilter blurX="4" blurY="4" quality="3"/>
+      </filters>
+    </Path>
+  </degrafa:GeometryGroup>
+  <degrafa:GeometryGroup id="" x="" y="">
+    <geometry:Ellipse fill="{blue}"
+                      stroke="{white}"
+                      height="200"
+                      width="360"/>
+  </degrafa:GeometryGroup>
+  <degrafa:GeometryGroup id="" x="" y="">
+    <geometry:RegularRectangle    fill="{blue}"
+                                        stroke="{white}"
+                                        height="200"
+                                        width="360"/>
+  </degrafa:GeometryGroup>
+  <RasterText id="bottomText" color="#62ABCD" inheritFill="false" inheritStroke="false" 
+                embedFonts="true" autoSizeField="true"
+                text="{_label}" verticalCenter="1" horizontalCenter="0" fontFamily="Arial" fontWeight="bold"> 
+            </RasterText>
+
+</degrafa:Surface>

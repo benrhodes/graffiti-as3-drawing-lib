@@ -126,7 +126,7 @@ package com.nocircleno.graffiti {
 		private var _zoom:Number = 1;
 		private var _minZoom:uint = 1;
 		private var _maxZoom:uint;
-		private var _history:Vector.<BitmapData>;
+		private var _history:Vector.<CanvasHistoryPoint>;
 		private var _maxHistoryLength:int;
 		private var _historyPosition:uint = 0;
 		private var _shiftKeyWasDown:Boolean = false;
@@ -620,7 +620,7 @@ package com.nocircleno.graffiti {
 				}
 				
 				// create new vector
-				_history = new Vector.<BitmapData>();
+				_history = new Vector.<CanvasHistoryPoint>();
 				
 				// reset history position
 				_historyPosition = 0;
@@ -1173,7 +1173,7 @@ package com.nocircleno.graffiti {
 			if(_maxHistoryLength != 0) {
 				
 				// create history vector
-				_history = new Vector.<BitmapData>();
+				_history = new Vector.<CanvasHistoryPoint>();
 				
 				// record blank canvas to history
 				writeToHistory();
@@ -1190,8 +1190,12 @@ package com.nocircleno.graffiti {
 		***************************************************************************/
 		private function restoreFromHistory():void {
 			
+			var historyPoint:CanvasHistoryPoint = _history[_historyPosition];
+			var historyBitmapData:BitmapData = historyPoint.bitmapData;
+			var historyObjectData:XML = historyPoint.objectData;
+
 			// get history bitmap rectangle
-			var historyRect:Rectangle = _history[_historyPosition].rect;
+			var historyRect:Rectangle = historyBitmapData.rect;
 			
 			// check to see if the dims of history bitmap and the current canas size don't match
 			if(historyRect.width != _canvasWidth || historyRect.height != _canvasHeight) {
@@ -1200,7 +1204,7 @@ package com.nocircleno.graffiti {
 				var temp:BitmapData = new BitmapData(_canvasWidth, _canvasHeight, true, 0x00FFFFFF);
 				
 				// merge new tempory and history bitmapdata objects
-				temp.copyPixels(_history[_historyPosition], _history[_historyPosition].rect, new Point(0, 0));
+				temp.copyPixels(historyBitmapData, historyBitmapData.rect, new Point(0, 0));
 				
 				// copy pixels to canvas bitmapdata
 				_bmp.copyPixels(temp, temp.rect, new Point(0, 0));
@@ -1210,10 +1214,15 @@ package com.nocircleno.graffiti {
 				
 			} else {
 				
-				// restore history
-				_bmp.copyPixels(_history[_historyPosition], _history[_historyPosition].rect, new Point(0, 0));
+				// restore bitmap from history
+				_bmp.copyPixels(historyBitmapData, historyBitmapData.rect, new Point(0, 0));
 			
 			}
+
+			// restore objects from history
+			_objectManager.selectAll();
+			_objectManager.deleteSelected();
+			setObjectData(historyObjectData, FormatType.DEGRAFA);
 			
 		}
 		
@@ -1248,7 +1257,7 @@ package com.nocircleno.graffiti {
 			}
 			
 			// write current drawing to history
-			_history.push(_bmp.clone());
+			_history.push(new CanvasHistoryPoint(_bmp.clone(), getObjectData(FormatType.DEGRAFA)));
 			
 			// set history index to end
 			_historyPosition = _history.length - 1;
@@ -1791,4 +1800,36 @@ package com.nocircleno.graffiti {
 
 	}
 		
+}
+
+import flash.display.BitmapData;
+import flash.system.System;
+
+class CanvasHistoryPoint {
+
+	private var _bitmapData:BitmapData
+	private var _objectData:XML;
+
+	public function CanvasHistoryPoint(bitmapData:BitmapData, objectData:XML):void {
+
+		this._bitmapData = bitmapData;
+		this._objectData = objectData;
+
+	}
+
+	public function get bitmapData():BitmapData {
+		return _bitmapData;
+	}
+
+	public function get objectData():XML {
+		return _objectData;
+	}
+
+	public function dispose():void {
+
+		_bitmapData.dispose();
+		System.disposeXML(_objectData);
+
+	}
+
 }

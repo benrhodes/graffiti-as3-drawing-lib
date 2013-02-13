@@ -918,8 +918,8 @@ package com.nocircleno.graffiti {
 		private function addToStageHandler(e:Event):void {
 			
 			this.removeEventListener(Event.ADDED_TO_STAGE, addToStageHandler);
-			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyboardShortcutHandler);
-			stage.addEventListener(KeyboardEvent.KEY_UP, keyboardShortcutHandler);
+			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyboardShortcutHandler, false, 0, true);
+			stage.addEventListener(KeyboardEvent.KEY_UP, keyboardShortcutHandler, false, 0, true);
 			
 		}
 		
@@ -1013,7 +1013,7 @@ package com.nocircleno.graffiti {
 		private function enableContinuousNudging():void {
 
 			_nudgeTimoutID = -1;
-			stage.addEventListener(Event.ENTER_FRAME, nudgeObjects);
+			stage.addEventListener(Event.ENTER_FRAME, nudgeObjects, false, 0, true);
 			
 		}
 		
@@ -1313,8 +1313,8 @@ package com.nocircleno.graffiti {
 					if(_mouseDrag) {
 						
 						container.startDrag(false, new Rectangle(-(container.width - _canvasWidth), -(container.height - _canvasHeight), (container.width - _canvasWidth), (container.height - _canvasHeight)));
-						stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler);
-						stage.addEventListener(MouseEvent.MOUSE_MOVE, dragEventUpdater);
+						stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler, false, 0, true);
+						stage.addEventListener(MouseEvent.MOUSE_MOVE, dragEventUpdater, false, 0, true);
 						
 					} else {
 						
@@ -1375,8 +1375,8 @@ package com.nocircleno.graffiti {
 									} else if (_tool is SelectionTool) {
 										
 										SelectionTool(_tool).startSelectionPoint = new Point(container.mouseX, container.mouseY);
-										stage.addEventListener(MouseEvent.MOUSE_MOVE, draw);
-										stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler);
+										stage.addEventListener(MouseEvent.MOUSE_MOVE, draw, false, 0, true);
+										stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler, false, 0, true);
 										
 									}
 								
@@ -1430,14 +1430,14 @@ package com.nocircleno.graffiti {
 												//go.startDrag();
 												_lastMousePosition.x = object_layer.mouseX;
 												_lastMousePosition.y = object_layer.mouseY;
-												stage.addEventListener(MouseEvent.MOUSE_MOVE, moveObjectHandler);
+												stage.addEventListener(MouseEvent.MOUSE_MOVE, moveObjectHandler, false, 0, true);
 											}
 											
 										}
 										
 									}
 									
-									stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler);
+									stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler, false, 0, true);
 									
 								}
 								
@@ -1454,10 +1454,10 @@ package com.nocircleno.graffiti {
 								_prevPoint = new Point(container.mouseX, container.mouseY);
 							}
 							
-							stage.addEventListener(MouseEvent.MOUSE_MOVE, draw);
+							stage.addEventListener(MouseEvent.MOUSE_MOVE, draw, false, 0, true);
 							draw();
 							
-							stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler);
+							stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler, false, 0, true);
 							
 						}
 						

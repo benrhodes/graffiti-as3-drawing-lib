@@ -1762,7 +1762,10 @@ package com.nocircleno.graffiti {
 						
 						// clear vectors from drawing space
 						drawing_layer.graphics.clear();
-						
+
+						// clear objects
+						eraseObjectsAtPoint(nextPoint);
+
 						// reset tool data
 						toolRef.resetTool();
 						
@@ -1779,6 +1782,13 @@ package com.nocircleno.graffiti {
 				
 		}
 		
+		private function eraseObjectsAtPoint(point:Point):void {
+
+			_objectManager.setSelection(getGraffitiObjectsAtPoint(point));
+			_objectManager.deleteSelected();
+
+		}
+
 	}
 		
 }

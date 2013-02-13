@@ -238,7 +238,7 @@ package com.nocircleno.graffiti {
 			object_layer.addEventListener(GraffitiObjectEvent.EXIT_EDIT, objectEventHandler, true, 0, true);
 			
 			// init object manager
-			_objectManager = GraffitiObjectManager.getInstance();
+			_objectManager = new GraffitiObjectManager();
 			_objectManager.addEventListener(GraffitiObjectEvent.SELECT, objectEventHandler);
 			_objectManager.addEventListener(GraffitiObjectEvent.DESELECT, objectEventHandler);
 			_objectManager.addEventListener(GraffitiObjectEvent.DELETE, objectEventHandler);
@@ -302,6 +302,10 @@ package com.nocircleno.graffiti {
 			
 		}
 		
+		public function get objectManager():GraffitiObjectManager {
+			return _objectManager
+		}
+
 		/**
 		* Control the canvas width.
 		*

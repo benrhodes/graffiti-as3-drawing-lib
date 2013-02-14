@@ -284,24 +284,52 @@ package com.nocircleno.graffiti {
 		}
 		
 		/**
-		* The <code>getObjectData</code> method will create graffiti objects from xml.
+		* The <code>getObjectData</code> method will convert all the graffiti objects to xml.
 		*
 		* @param format The format of the xml, currently only supports Degrafa.
-		* 
+		*
 		* @return XML in the format specified
 		*/
 		public function getObjectData(format:String):XML {
-			
-			var xml:XML;
-			
-			if (format == FormatType.DEGRAFA) {
-				xml = DegrafaConverter.to(_objectManager.objectList);
-			}
-			
-			return xml;
-			
+
+			return getDataForObjects(_objectManager.objectList, format);
+
 		}
-		
+
+		/**
+		* The <code>getSelectedObjectData</code> method will convert the selected graffiti objects to xml.
+		*
+		* @param format The format of the xml, currently only supports Degrafa.
+		*
+		* @return XML in the format specified
+		*/
+		public function getSelectedObjectData(format:String):XML {
+
+			var selectedObjectList:Vector.<GraffitiObject> = new Vector.<GraffitiObject>();
+
+			for each (var graffitiObject:GraffitiObject in _objectManager.objectList)
+			{
+				if (graffitiObject.selected) {
+					selectedObjectList.push(graffitiObject);
+				}
+			}
+
+			return getDataForObjects(selectedObjectList, format);
+
+		}
+
+		private function getDataForObjects(objectList:Vector.<GraffitiObject>, format:String):XML {
+
+			var xml:XML;
+
+			if (format == FormatType.DEGRAFA) {
+				xml = DegrafaConverter.to(objectList);
+			}
+
+			return xml;
+
+		}
+
 		public function get objectManager():GraffitiObjectManager {
 			return _objectManager
 		}

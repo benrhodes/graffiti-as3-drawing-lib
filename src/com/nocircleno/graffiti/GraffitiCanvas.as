@@ -627,6 +627,23 @@ package com.nocircleno.graffiti {
 		}
 		
 		/**
+		* The <code>resetHistory</code> method will clear all history items
+		* then add a history entry for the current state of the canvas.
+		*
+		* @see #prevHistory()
+		* @see #historyLength
+		* @see #historyPosition
+		* @see #maxHistoryLength
+		* @see #clearHistory()
+		*/
+		public function resetHistory():void {
+
+			clearHistory();
+			writeToHistory();
+
+		}
+
+		/**
 		* The <code>clearHistory</code> method will clear all history items.
 		* the Canvas.
 		*

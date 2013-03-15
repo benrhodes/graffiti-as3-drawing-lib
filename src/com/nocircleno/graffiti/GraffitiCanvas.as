@@ -1286,7 +1286,7 @@ package com.nocircleno.graffiti {
 				
 				var i:int;
 				
-				for(i=(historyLength-1); i>_historyPosition; --i) {
+				for(i=(historyLength-1); i>Math.max(_historyPosition,0); --i) {
 					_history[i].dispose();
 					_history.splice(i, 1);
 				}

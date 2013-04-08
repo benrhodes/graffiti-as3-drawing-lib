@@ -1,5 +1,5 @@
 ﻿/*
-*  	Graffiti 3.0 Beta 1
+*  	Graffiti 2.5.6
 *  	______________________________________________________________________
 *  	www.nocircleno.com/graffiti/
 */
@@ -17,12 +17,6 @@
  
 package com.nocircleno.graffiti {
 	
-	import com.nocircleno.graffiti.display.BrushObject;
-	import com.nocircleno.graffiti.tools.BrushDefinition;
-	import com.nocircleno.graffiti.display.ShapeObject;
-	import com.nocircleno.graffiti.tools.ShapeDefinition;
-	import com.nocircleno.graffiti.tools.LineDefinition;
-	import com.nocircleno.graffiti.display.LineObject;
 	import flash.display.DisplayObject;
 	import flash.display.Sprite;
 	import flash.display.Bitmap;
@@ -65,12 +59,8 @@ package com.nocircleno.graffiti {
 	import com.nocircleno.graffiti.tools.SelectionTool;
 	import com.nocircleno.graffiti.tools.LayerType;
 	import com.nocircleno.graffiti.display.GraffitiObject;
-	import com.nocircleno.graffiti.display.TextObject;
+	import com.nocircleno.graffiti.display.Text;
 	import com.nocircleno.graffiti.managers.GraffitiObjectManager;
-	import com.nocircleno.graffiti.converters.DegrafaConverter;
-	import com.nocircleno.graffiti.converters.FormatType;
-	import flash.utils.setTimeout;
-	import flash.utils.clearTimeout;
 	
 	/**
 	* The GraffitiCanvas Class provides an area on stage to draw in.  It extends
@@ -104,8 +94,6 @@ package com.nocircleno.graffiti {
 		private const MAX_WIDTH:uint = 4095;
 		private const MAX_HEIGHT:uint = 4095;
 		private const MAX_BITMAP_DIM:uint = 5500;
-		private const OBJECT_NUDGE_AMOUNT:uint = 1;
-		private const OBJECT_SHIFT_NUDGE_AMOUNT:uint = 5;
 		
 		// display assets		
 		private var drawing_layer:Sprite;
@@ -131,13 +119,6 @@ package com.nocircleno.graffiti {
 		private var _historyPosition:uint = 0;
 		private var _shiftKeyWasDown:Boolean = false;
 		private var _objectManager:GraffitiObjectManager;
-		
-		private var _nudgingObjects:Boolean = false;
-		private var _nudgeTimoutID:int = -1;
-		private var _keyboardShiftDown:Boolean = false;
-		private var _arrowKeysDownTacker:Vector.<Boolean>;
-		
-		private var _lastMousePosition:Point = new Point();
 		
 		/**
 		* The <code>GraffitiCanvas</code> constructor.
@@ -188,13 +169,6 @@ package com.nocircleno.graffiti {
 			// check values
 			checkPropertyLimits();
 			
-			// init list to track what arrow keys are down
-			_arrowKeysDownTacker = new Vector.<Boolean>(4, true);
-			_arrowKeysDownTacker[0] = false; // LEFT KEY
-			_arrowKeysDownTacker[1] = false; // UP KEY
-			_arrowKeysDownTacker[2] = false; // RIGHT KEY
-			_arrowKeysDownTacker[3] = false; // DOWN KEY
-			
 			/////////////////////////////////////////////////
 			// Create Default Tool, a Brush
 			/////////////////////////////////////////////////
@@ -204,11 +178,8 @@ package com.nocircleno.graffiti {
 			// Create Canvas Assets
 			/////////////////////////////////////////////////
 			drawing_layer = new Sprite();
-			drawing_layer.name = "drawing_layer";
 			object_layer = new Sprite();
-			object_layer.name = "object_layer";
 			container = new Sprite();
-			container.name = "container";
 			
 			_bmp = new BitmapData(_canvasWidth, _canvasHeight, true, 0x00FFFFFF);
 			canvas = new Bitmap(_bmp, "auto", false);
@@ -242,7 +213,6 @@ package com.nocircleno.graffiti {
 			_objectManager.addEventListener(GraffitiObjectEvent.SELECT, objectEventHandler);
 			_objectManager.addEventListener(GraffitiObjectEvent.DESELECT, objectEventHandler);
 			_objectManager.addEventListener(GraffitiObjectEvent.DELETE, objectEventHandler);
-			_objectManager.addEventListener(GraffitiObjectEvent.MOVE, objectEventHandler);
 			
 			// add event listener for mouse down
 			this.addEventListener(MouseEvent.MOUSE_DOWN, mouseHandler);
@@ -258,48 +228,6 @@ package com.nocircleno.graffiti {
 			/////////////////////////////////////////////////
 			initHistory(numberHistoryLevels);
 		
-		}
-		
-		/**
-		* The <code>setObjectData</code> method will create graffiti objects from xml.
-		*
-		* @param xml The object data in xml.
-		* @param format The format of the xml, currently only supports Degrafa.
-		*/
-		public function setObjectData(xml:XML, format:String):void {
-			
-			var graffitiObjects:Vector.<GraffitiObject>;
-			
-			if (format == FormatType.DEGRAFA) {
-				graffitiObjects = DegrafaConverter.from(xml);
-			}
-			
-			for (var i:int; i < graffitiObjects.length; ++i) {
-				object_layer.addChild(graffitiObjects[i]);
-				_objectManager.addObject(graffitiObjects[i]);	
-			}
-			
-			_objectManager.deselectAll();
-			
-		}
-		
-		/**
-		* The <code>getObjectData</code> method will create graffiti objects from xml.
-		*
-		* @param format The format of the xml, currently only supports Degrafa.
-		* 
-		* @return XML in the format specified
-		*/
-		public function getObjectData(format:String):XML {
-			
-			var xml:XML;
-			
-			if (format == FormatType.DEGRAFA) {
-				xml = DegrafaConverter.to(_objectManager.objectList);
-			}
-			
-			return xml;
-			
 		}
 		
 		/**
@@ -657,9 +585,9 @@ package com.nocircleno.graffiti {
 				if (useEntireCanvas) {
 					
 					// we do not want to include the object layer in the drawing capture
-					//this.object_layer.visible = false;
-					snapshot1 = BitmapData(this.drawing(true, true, true, false));
-					//this.object_layer.visible = true;
+					this.object_layer.visible = false;
+					snapshot1 = BitmapData(this.drawing(true));
+					this.object_layer.visible = true;
 					
 				} else {
 					snapshot1 = BitmapData(_bmp.clone());
@@ -835,29 +763,15 @@ package com.nocircleno.graffiti {
 		* the drawn canvas including any overlay or underlay assets.
 		*
 		* @param transparentBg Specify if you want the image to have a transparent background.
-		* @param includeOverlay Include the overlay display object with the image.
-		* @param includeUnderlay Include the underlay display object with the image.
-		* @param includeObjectLayer Include the object layer with the image.
 		* 
 		* @return A BitmapData object containing the entire canvas.
 		*/
-		public function drawing(transparentBg:Boolean = false, includeOverlay:Boolean = true, includeUnderlay:Boolean = true, includeObjectLayer:Boolean = true):BitmapData {
+		public function drawing(transparentBg:Boolean = false):BitmapData {
 			
 			// make sure we deselect all objects before capturing the canvas.
 			_objectManager.deselectAll();
 			
 			var canvasBmp:BitmapData;
-			
-			// set visibility
-			if (overlay_do != null) {
-				overlay_do.visible = includeOverlay;
-			}
-			
-			if (underlay_do != null) {
-				underlay_do.visible = includeUnderlay;
-			}
-			
-			object_layer.visible = includeObjectLayer;
 			
 			if(!transparentBg) {
 				canvasBmp = new BitmapData(_canvasWidth, _canvasHeight, false, 0xFFFFFFFF);
@@ -866,17 +780,6 @@ package com.nocircleno.graffiti {
 			}
 			
 			canvasBmp.draw(container);
-			
-			// turn all on
-			if (overlay_do != null) {
-				overlay_do.visible = true;
-			}
-			
-			if (underlay_do != null) {
-				underlay_do.visible = true;
-			}
-			
-			object_layer.visible = true;
 			
 			return canvasBmp;
 			
@@ -914,7 +817,6 @@ package com.nocircleno.graffiti {
 		private function addToStageHandler(e:Event):void {
 			
 			this.removeEventListener(Event.ADDED_TO_STAGE, addToStageHandler);
-			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyboardShortcutHandler);
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyboardShortcutHandler);
 			
 		}
@@ -930,122 +832,11 @@ package com.nocircleno.graffiti {
 			
 			if(_canvasEnabled) {
 			
-				if(e.type == KeyboardEvent.KEY_UP) {
-					
-					if (e.keyCode == Keyboard.DELETE) {
-						
-						_objectManager.deleteSelected();
-						
-					} else {
-						
-						// record if the shift key is down
-						_keyboardShiftDown = e.shiftKey;
-						
-						if(e.keyCode == Keyboard.LEFT) {
-							_arrowKeysDownTacker[0] = false;
-						} else if(e.keyCode == Keyboard.RIGHT) {
-							_arrowKeysDownTacker[2] = false;						
-						} else if(e.keyCode == Keyboard.UP) {
-							_arrowKeysDownTacker[1] = false;
-						} else if(e.keyCode == Keyboard.DOWN) {
-							_arrowKeysDownTacker[3] = false;
-						}
-						
-						// if no arrow keys are down then stop the nudging show
-						if(!_arrowKeysDownTacker[0] && !_arrowKeysDownTacker[1] && !_arrowKeysDownTacker[2] && !_arrowKeysDownTacker[3]) {
-							
-							// clear timeout if it hasn't fired yet
-							if(_nudgeTimoutID != -1) {
-								clearTimeout(_nudgeTimoutID);
-							}
-							
-							_nudgingObjects = false;
-							
-							stage.removeEventListener(Event.ENTER_FRAME, nudgeObjects);
-							
-						}
-						
-					}
-				
-				} else if(e.type == KeyboardEvent.KEY_DOWN) {
-					
-					var arrowKeyPressed:Boolean = false;
-					
-					// record if the shift key is down
-					_keyboardShiftDown = e.shiftKey;
-					
-					// mark arrow key as down
-					if(e.keyCode == Keyboard.LEFT) {
-						arrowKeyPressed = true;
-						_arrowKeysDownTacker[0] = true;
-					} else if(e.keyCode == Keyboard.UP) {
-						arrowKeyPressed = true;
-						_arrowKeysDownTacker[1] = true;
-					} else if(e.keyCode == Keyboard.RIGHT) {
-						arrowKeyPressed = true;
-						_arrowKeysDownTacker[2] = true;
-					} else if(e.keyCode == Keyboard.DOWN) {
-						arrowKeyPressed = true;
-						_arrowKeysDownTacker[3] = true;
-					}
-					
-					// start object nudging if not already doing it
-					if(!_nudgingObjects && arrowKeyPressed) {
-						
-						// nudge
-						nudgeObjects(null);
-						
-						// set a short timeout before continually moving objects
-						_nudgeTimoutID = setTimeout(enableContinuousNudging, 500);
-						
-					}
-					
+				if (e.keyCode == Keyboard.DELETE) {
+					_objectManager.deleteSelected();
 				}
 				
 			}
-			
-		}
-		
-		private function enableContinuousNudging():void {
-
-			_nudgeTimoutID = -1;
-			stage.addEventListener(Event.ENTER_FRAME, nudgeObjects);
-			
-		}
-		
-		private function nudgeObjects(e:Event):void {
-			
-			_nudgingObjects = true;
-			
-			var xOffset:int = 0;
-			var yOffset:int = 0;
-			
-			var nudgeAmount:int;
-			
-			if(_keyboardShiftDown) {
-				nudgeAmount = OBJECT_SHIFT_NUDGE_AMOUNT;
-			} else {
-				nudgeAmount = OBJECT_NUDGE_AMOUNT;
-			}
-			
-			// left arrow
-			if(_arrowKeysDownTacker[0]) {
-				xOffset = -nudgeAmount;
-			// right arrow
-			} else if(_arrowKeysDownTacker[2]) {
-				xOffset = nudgeAmount;
-			}
-			
-			// up arrow
-			if(_arrowKeysDownTacker[1]) {
-				yOffset = -nudgeAmount;
-			// down arrow
-			} else if(_arrowKeysDownTacker[3]) {
-				yOffset = nudgeAmount;
-			}
-			
-			// move objects
-			_objectManager.moveSelectedObjects(xOffset, yOffset);
 			
 		}
 		
@@ -1062,13 +853,13 @@ package com.nocircleno.graffiti {
 			
 			if (e.type == GraffitiObjectEvent.DESELECT) {
 				
-				if (e.graffitiObjects[0] is TextObject) {
+				if (e.graffitiObject is Text) {
 					
 					// if the text field has no text, then kill it
-					if (TextObject(e.graffitiObjects[0]).text == "") {
+					if (Text(e.graffitiObject).text == "") {
 						
-						if (object_layer.contains(e.graffitiObjects[0])) {
-							object_layer.removeChild(e.graffitiObjects[0]);
+						if (object_layer.contains(e.graffitiObject)) {
+							object_layer.removeChild(e.graffitiObject);
 						}
 						
 						dispatch = false;
@@ -1077,13 +868,7 @@ package com.nocircleno.graffiti {
 				}
 		
 			} else if (e.type == GraffitiObjectEvent.DELETE) {
-				
-				var numberObjects:int = e.graffitiObjects.length;
-				
-				for(var i:int=0; i<numberObjects; ++i) {
-					object_layer.removeChild(e.graffitiObjects[i]);
-				}
-				
+				object_layer.removeChild(e.graffitiObject);
 			}
 			
 			// stop event from rocking
@@ -1255,35 +1040,6 @@ package com.nocircleno.graffiti {
 		}
 		
 		/**************************************************************************
-			Method	: getGraffitiObjectsAtPoint()
-			
-			Purpose	: This method will return all objects at point passed.
-			
-			Params	: pt - Point Clicked on in object layer space.
-		***************************************************************************/
-		private function getGraffitiObjectsAtPoint(pt:Point):Vector.<GraffitiObject> {
-			
-			pt = object_layer.localToGlobal(pt);
-			
-			var objects:Vector.<GraffitiObject> = new Vector.<GraffitiObject>();
-			var numObjects:int = object_layer.numChildren;
-			var child:GraffitiObject;
-			
-			for (var i:int = 0; i < numObjects; ++i) {
-				
-				child = GraffitiObject(object_layer.getChildAt(i));
-				
-				if (child.hitTestPoint(pt.x, pt.y, true)) {
-					objects.push(child);
-				}
-				
-			}
-			
-			return objects;
-			
-		}
-		
-		/**************************************************************************
 			Method	: mouseHandler()
 			
 			Purpose	: This method will handle the mouse events used for drawing.
@@ -1304,48 +1060,32 @@ package com.nocircleno.graffiti {
 						stage.addEventListener(MouseEvent.MOUSE_MOVE, dragEventUpdater);
 						
 					} else {
-						
-						////////////////////////////////////////////////////////////////////
-						// Adjust drawing layer depth based on Layer being drawing to
-						////////////////////////////////////////////////////////////////////
-						if (_tool.layerType == LayerType.OBJECT_LAYER) {
-							container.setChildIndex(drawing_layer, container.numChildren - 1);
-						} else {
-							container.setChildIndex(drawing_layer, 2);
-						}
 					
-						////////////////////////////////////////////////////////////////////
-						// Start Tool Operations
-						////////////////////////////////////////////////////////////////////
-						if (_tool.renderType == ToolRenderType.SINGLE_CLICK || _tool is SelectionTool) {
+						if (_tool.renderType == ToolRenderType.SINGLE_CLICK) {
 							
 							if (_tool is FillBucketTool) {
-								
 								fill(new Point(container.mouseX, container.mouseY), FillBucketTool(_tool).fillColor, FillBucketTool(_tool).useEntireCanvas, FillBucketTool(_tool).useAdvancedFill, FillBucketTool(_tool).smoothStrength);						
-							
 							} else {
 								
 								// Get any objects under the mouse position.
-								var objs:Vector.<GraffitiObject> = getGraffitiObjectsAtPoint(new Point(object_layer.mouseX, object_layer.mouseY));
+								// We will use this to decide if we clicked on an object or just canvas
+								var objs:Array = this.object_layer.getObjectsUnderPoint(new Point(container.mouseX, container.mouseY));
 								var selectedObjects:Vector.<GraffitiObject>;
-								var text:TextObject;
+								var text:Text;
 								
 								// if no objects where click on...
 								if (objs.length == 0) {
-								
+									
 									if (_tool is TextTool) {
 										
 										if (_objectManager.areObjectsSelected()) {
-											
 											_objectManager.deselectAll();
-										
 										} else {
 											
-											text = new TextObject(TextTool(_tool).textSettings);
+											text = new Text(TextTool(_tool).textSettings);
 											text.x = container.mouseX;
-											text.y = container.mouseY - (text.height / 2);
+											text.y = container.mouseY - (text.height/2);
 											object_layer.addChild(text);
-											text.editing = true;
 											
 											_objectManager.deselectAll();
 											_objectManager.addObject(text);
@@ -1354,16 +1094,15 @@ package com.nocircleno.graffiti {
 											selectedObjects = new Vector.<GraffitiObject>();
 											selectedObjects.push(text);
 											
-											_objectManager.addToSelection(text);
-											//_objectManager.setSelection(selectedObjects);
+											_objectManager.setSelection(selectedObjects);
 											
 										}
 										
 									} else if (_tool is SelectionTool) {
 										
-										SelectionTool(_tool).startSelectionPoint = new Point(container.mouseX, container.mouseY);
-										stage.addEventListener(MouseEvent.MOUSE_MOVE, draw);
-										stage.addEventListener(MouseEvent.MOUSE_UP, mouseHandler);
+										if (_objectManager.areObjectsSelected()) {
+											_objectManager.deselectAll();
+										} 
 										
 									}
 								
@@ -1374,9 +1113,9 @@ package com.nocircleno.graffiti {
 									
 										// get Text Reference
 										if (e.target is TextField) {
-											text = TextObject(e.target.parent);
+											text = Text(e.target.parent);
 										} else {
-											text = TextObject(e.target);
+											text = Text(e.target);
 										}
 									
 										if (!text.editing) {
@@ -1392,34 +1131,22 @@ package com.nocircleno.graffiti {
 										
 									} else if (_tool is SelectionTool) {
 										
-										SelectionTool(_tool).startSelectionPoint = null;
+										var go:GraffitiObject;
 										
-										// pick the top object (highest depth)
-										var go:GraffitiObject = objs[objs.length - 1];
+										// get graffiti object Reference
+										if (e.target.parent == this.object_layer) {
+											go = GraffitiObject(e.target);
+										} else if(e.target.parent.parent == this.object_layer) {
+											go = GraffitiObject(e.target.parent);
+										}
 										
-										if(e.shiftKey) {
+										selectedObjects = new Vector.<GraffitiObject>();
+										selectedObjects.push(go);
 											
-											if(go.selected) {
-												_objectManager.removeFromSelection(go);
-											} else {
-												_objectManager.addToSelection(go);
-											}
-											
-										} else {
+										_objectManager.setSelection(selectedObjects);
 										
-											if(!go.selected) {
-												_objectManager.deselectAll();
-											} 
-											
-											_objectManager.addToSelection(go);
-											
-											if (!go.editing) {
-												//go.startDrag();
-												_lastMousePosition.x = object_layer.mouseX;
-												_lastMousePosition.y = object_layer.mouseY;
-												stage.addEventListener(MouseEvent.MOUSE_MOVE, moveObjectHandler);
-											}
-											
+										if (!go.editing) {
+											go.startDrag();
 										}
 										
 									}
@@ -1431,11 +1158,6 @@ package com.nocircleno.graffiti {
 							} 
 							
 						} else {
-							
-							// select all if this tool draw to the object layer
-							if (_tool.layerType == LayerType.OBJECT_LAYER) {
-								_objectManager.deselectAll();
-							}
 						
 							if (_tool.renderType == ToolRenderType.CLICK_DRAG) {
 								_prevPoint = new Point(container.mouseX, container.mouseY);
@@ -1454,30 +1176,8 @@ package com.nocircleno.graffiti {
 					
 					stopDrag();
 					
-					 if (_tool is SelectionTool) {
-							
-						// if selection rectangle is not null then set selection by the rectangle
-						if(SelectionTool(_tool).selectionRectangle != null) {
-							
-							// clean up
-							stage.removeEventListener(MouseEvent.MOUSE_MOVE, draw);
-							drawing_layer.graphics.clear();
-							
-							// store last point.
-							SelectionTool(_tool).endSelectionPoint = new Point(container.mouseX, container.mouseY);
-							
-							// set selection by rectangle
-							_objectManager.setSelectionByRectangle(SelectionTool(_tool).selectionRectangle);
-						
-						// selected object operation
-						} else {
-							
-							stage.removeEventListener(MouseEvent.MOUSE_MOVE, moveObjectHandler);
-						
-						}
-						
 					// prevPoint will be defined if in drawing mode
-					} else if(_prevPoint != null) {
+					if(_prevPoint != null) {
 						
 						// if filters are present, this is a blur on a brush
 						// need to divide the blur value by zoom for better effect.
@@ -1486,82 +1186,9 @@ package com.nocircleno.graffiti {
 							drawing_layer.filters = [new BlurFilter(modBrushBlur, modBrushBlur, 2)];
 						}
 						
-						// draw to object layer
-						if (_tool.layerType == LayerType.OBJECT_LAYER) {
-								
-							if(_tool is BrushTool) {
-							
-								var brushDef:BrushDefinition = BrushTool(_tool).getBrushDefinition();
-								
-								var brushObject:BrushObject = new BrushObject(brushDef);
-								brushObject.name = "brush_object_" + new Date().getTime().toString();
-								object_layer.addChild(brushObject);
-								brushObject.x = brushDef.position.x;
-								brushObject.y = brushDef.position.y;
-							
-								_objectManager.deselectAll();
-								_objectManager.addObject(brushObject);
-								
-								// set the object as selection
-								selectedObjects = new Vector.<GraffitiObject>();
-								selectedObjects.push(brushObject);
-								
-							} else if (_tool is ShapeTool) {
-								
-								var shapeDef:ShapeDefinition = ShapeTool(_tool).getShapeDefinition();
-								
-								if(shapeDef != null) {
-								
-									var shapeObject:ShapeObject = new ShapeObject(shapeDef);
-									
-									shapeObject.name = "shape_object_" + new Date().getTime().toString();
-									object_layer.addChild(shapeObject);
-									shapeObject.x = shapeDef.position.x;
-									shapeObject.y = shapeDef.position.y;
-								
-									_objectManager.deselectAll();
-									_objectManager.addObject(shapeObject);
-									
-									// set the object as selection
-									selectedObjects = new Vector.<GraffitiObject>();
-									selectedObjects.push(shapeObject);
-									
-								}
-								
-							} else if (_tool is LineTool) {
-								
-								var lineDef:LineDefinition = LineTool(_tool).getLineDefinition();
-								
-								if (lineDef != null) {
-									
-									var lineObject:LineObject = new LineObject(lineDef);
-									
-									// add line object to object layer
-									lineObject.name = "line_object_" + new Date().getTime().toString();
-									object_layer.addChild(lineObject);
-									lineObject.x = lineDef.position.x;
-									lineObject.y = lineDef.position.y;
-								
-									_objectManager.deselectAll();
-									_objectManager.addObject(lineObject);
-									
-									// set the object as selection
-									selectedObjects = new Vector.<GraffitiObject>();
-									selectedObjects.push(lineObject);
-									
-								}
-								
-							}
-							
-							if(selectedObjects != null) {
-								_objectManager.setSelection(selectedObjects);
-							}
-							
 						// draw to bitmap
-						} else {
-							_bmp.draw(drawing_layer, new Matrix(), null, BitmapTool(_tool).mode);
-						}
-							
+						_bmp.draw(drawing_layer, new Matrix(), null, BitmapTool(_tool).mode);
+						
 						// clear vectors from drawing space
 						drawing_layer.graphics.clear();
 						
@@ -1599,23 +1226,6 @@ package com.nocircleno.graffiti {
 		}
 		
 		/**************************************************************************
-			Method	: moveObjectHandler()
-			
-			Purpose	: This method will move all selected objects based on the
-					  distance of the previous mouse movement.
-			
-			Params	: e -- MouseEvent object.
-		***************************************************************************/
-		private function moveObjectHandler(e:MouseEvent):void {
-			
-			_objectManager.moveSelectedObjects( object_layer.mouseX - _lastMousePosition.x, object_layer.mouseY - _lastMousePosition.y);
-			
-			_lastMousePosition.x = object_layer.mouseX;
-			_lastMousePosition.y = object_layer.mouseY;
-			
-		}
-		
-		/**************************************************************************
 			Method	: dragEventUpdater()
 			
 			Purpose	: This method will dispatch the DRAG event for the canvas.
@@ -1638,131 +1248,118 @@ package com.nocircleno.graffiti {
 		***************************************************************************/
 		private function draw(e:MouseEvent = null):void {
 			
-			if(_tool is SelectionTool) {
-				
-				SelectionTool(_tool).endSelectionPoint = new Point(container.mouseX, container.mouseY);
-				var selectionRectangle:Rectangle = SelectionTool(_tool).selectionRectangle;
-				
+			var toolRef:BitmapTool = BitmapTool(_tool);
+			var nextPoint:Point = new Point(container.mouseX, container.mouseY);
+			
+			if(toolRef.renderType == ToolRenderType.CLICK_DRAG) {
+				// clear vectors from drawing space
 				drawing_layer.graphics.clear();
-				drawing_layer.graphics.lineStyle(1, 0xFF0000, 1, true, LineScaleMode.NORMAL, CapsStyle.SQUARE, JointStyle.MITER);
-				drawing_layer.graphics.drawRect(selectionRectangle.x, selectionRectangle.y, selectionRectangle.width, selectionRectangle.height);
+			}
+			
+			if(_prevPoint == null) {
+				
+				// apply tool
+				toolRef.apply(drawing_layer, nextPoint);
 				
 			} else {
-			
-				var toolRef:BitmapTool = BitmapTool(_tool);
-				var nextPoint:Point = new Point(container.mouseX, container.mouseY);
 				
-				if(toolRef.renderType == ToolRenderType.CLICK_DRAG) {
+				///////////////////////////////////////////////////////
+				// Check to see if SHIFT is down to enforce limits
+				// on the Line or Shape tools.
+				///////////////////////////////////////////////////////
+				if(toolRef is LineTool && e != null) {
+					
+					// if shift then limit line to 90 degree angles
+					if(e.shiftKey) {
+						
+						// calculate abs x and y difference values
+						var xDiff:Number = nextPoint.x - _prevPoint.x;
+						var yDiff:Number = nextPoint.y - _prevPoint.y;
+						var absXDiff:Number = xDiff > 0.0 ? xDiff : -xDiff;
+						var absYDiff:Number = yDiff > 0.0 ? yDiff : -yDiff;
+						
+						// lock to 45, 135, 225, or 295 angle
+						if(xDiff > yDiff * .5 && xDiff * .5 < yDiff) {
+							
+							// take the lowest diff as the value to use
+							var finalOffSet:Number = xDiff < yDiff ? xDiff : yDiff;
+							
+							// determine the new x & y values to give us a 45 degree angle value
+							var xDiffRaw:Number = nextPoint.x - _prevPoint.x;
+							var yDiffRaw:Number = nextPoint.y - _prevPoint.y;
+							var xOffSet:Number = xDiffRaw < 0 ? -finalOffSet : finalOffSet;
+							var yOffSet:Number = yDiffRaw < 0 ? -finalOffSet : finalOffSet;
+							
+							// update next point to be on a 45 degree angle
+							nextPoint.x = _prevPoint.x + xOffSet;
+							nextPoint.y = _prevPoint.y + yOffSet;
+						
+						// lock line to 0 or 180 angle
+						} else if(absXDiff < absYDiff) {
+							nextPoint.x = _prevPoint.x;
+						// lock line to 90 or 270 angle
+						} else {
+							nextPoint.y = _prevPoint.y;
+						}
+						
+					}
+					
+				} else if (toolRef is ShapeTool && e != null) {
+					
+					// if shift then make RECTANGLE -> SQUARE or OVAL -> CIRCLE
+					if(e.shiftKey) {
+					
+						if(toolRef.type == ShapeType.OVAL) {
+							toolRef.type = ShapeType.CIRCLE;
+						} else if(toolRef.type == ShapeType.RECTANGLE) {
+							toolRef.type = ShapeType.SQUARE;
+						}
+						
+						// set flag
+						_shiftKeyWasDown = true;
+						
+					} else {
+						
+						if(_shiftKeyWasDown) {
+							
+							// reset flag
+							_shiftKeyWasDown = false;
+						
+							// check to see if we need to switch shapes back
+							if(toolRef.type == ShapeType.CIRCLE) {
+								toolRef.type = ShapeType.OVAL;
+							} else if(toolRef.type == ShapeType.SQUARE) {
+								toolRef.type = ShapeType.RECTANGLE;
+							}
+							
+						}
+						
+					}
+					
+				}
+				
+				// apply tool
+				toolRef.apply(drawing_layer, _prevPoint, nextPoint);
+				
+			}
+			
+			// if render type is continuous then write image to 
+			if(_tool.renderType == ToolRenderType.CONTINUOUS) {
+				
+				// store prev point for next time
+				_prevPoint = new Point(nextPoint.x, nextPoint.y);
+				
+				// erase modes need to be draw here and not on mouse up.
+				if(toolRef.mode == ToolMode.ERASE) {
+					
+					// draw to bitmap
+					_bmp.draw(drawing_layer, new Matrix(), null, toolRef.mode);
+					
 					// clear vectors from drawing space
 					drawing_layer.graphics.clear();
-				}
-				
-				if(_prevPoint == null) {
 					
-					// apply tool
-					toolRef.apply(drawing_layer, nextPoint);
-					
-				} else {
-					
-					///////////////////////////////////////////////////////
-					// Check to see if SHIFT is down to enforce limits
-					// on the Line or Shape tools.
-					///////////////////////////////////////////////////////
-					if(toolRef is LineTool && e != null) {
-						
-						// if shift then limit line to 90 degree angles
-						if(e.shiftKey) {
-							
-							// calculate abs x and y difference values
-							var xDiff:Number = nextPoint.x - _prevPoint.x;
-							var yDiff:Number = nextPoint.y - _prevPoint.y;
-							var absXDiff:Number = xDiff > 0.0 ? xDiff : -xDiff;
-							var absYDiff:Number = yDiff > 0.0 ? yDiff : -yDiff;
-							
-							// lock to 45, 135, 225, or 295 angle
-							if(xDiff > yDiff * .5 && xDiff * .5 < yDiff) {
-								
-								// take the lowest diff as the value to use
-								var finalOffSet:Number = xDiff < yDiff ? xDiff : yDiff;
-								
-								// determine the new x & y values to give us a 45 degree angle value
-								var xDiffRaw:Number = nextPoint.x - _prevPoint.x;
-								var yDiffRaw:Number = nextPoint.y - _prevPoint.y;
-								var xOffSet:Number = xDiffRaw < 0 ? -finalOffSet : finalOffSet;
-								var yOffSet:Number = yDiffRaw < 0 ? -finalOffSet : finalOffSet;
-								
-								// update next point to be on a 45 degree angle
-								nextPoint.x = _prevPoint.x + xOffSet;
-								nextPoint.y = _prevPoint.y + yOffSet;
-							
-							// lock line to 0 or 180 angle
-							} else if(absXDiff < absYDiff) {
-								nextPoint.x = _prevPoint.x;
-							// lock line to 90 or 270 angle
-							} else {
-								nextPoint.y = _prevPoint.y;
-							}
-							
-						}
-						
-					} else if (toolRef is ShapeTool && e != null) {
-						
-						// if shift then make RECTANGLE -> SQUARE or OVAL -> CIRCLE
-						if(e.shiftKey) {
-						
-							if(toolRef.type == ShapeType.OVAL) {
-								toolRef.type = ShapeType.CIRCLE;
-							} else if(toolRef.type == ShapeType.RECTANGLE) {
-								toolRef.type = ShapeType.SQUARE;
-							}
-							
-							// set flag
-							_shiftKeyWasDown = true;
-							
-						} else {
-							
-							if(_shiftKeyWasDown) {
-								
-								// reset flag
-								_shiftKeyWasDown = false;
-							
-								// check to see if we need to switch shapes back
-								if(toolRef.type == ShapeType.CIRCLE) {
-									toolRef.type = ShapeType.OVAL;
-								} else if(toolRef.type == ShapeType.SQUARE) {
-									toolRef.type = ShapeType.RECTANGLE;
-								}
-								
-							}
-							
-						}
-						
-					}
-					
-					// apply tool
-					toolRef.apply(drawing_layer, _prevPoint, nextPoint);
-					
-				}
-				
-				// if render type is continuous then write image to 
-				if(_tool.renderType == ToolRenderType.CONTINUOUS) {
-					
-					// store prev point for next time
-					_prevPoint = new Point(nextPoint.x, nextPoint.y);
-					
-					// erase modes need to be draw here and not on mouse up.
-					if(toolRef.mode == ToolMode.ERASE) {
-						
-						// draw to bitmap
-						_bmp.draw(drawing_layer, new Matrix(), null, toolRef.mode);
-						
-						// clear vectors from drawing space
-						drawing_layer.graphics.clear();
-						
-						// reset tool data
-						toolRef.resetTool();
-						
-					}
+					// reset tool data
+					toolRef.resetTool();
 					
 				}
 				

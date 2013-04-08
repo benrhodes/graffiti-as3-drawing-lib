@@ -1,5 +1,5 @@
 ﻿/*
-*  	Graffiti 3.0 Beta 1
+*  	Graffiti 2.5.6
 *  	______________________________________________________________________
 *  	www.nocircleno.com/graffiti/
 */
@@ -64,7 +64,7 @@ package com.nocircleno.graffiti.tools
 			
 			// store properties
 			this.font = font;
-			this.textFormat = new TextFormat(textFormat.font, textFormat.size, textFormat.color);
+			this.textFormat = textFormat;
 			_backgroundColor = backgroundColor;
 			_borderColor = borderColor;
 			
@@ -91,7 +91,7 @@ package com.nocircleno.graffiti.tools
 			
 			// update text format object if exist
 			if (_textFormat != null) {
-				_textFormat.font = _font.fontName;
+				_textFormat.font = _font.fontName;	
 			}
 			
 		}

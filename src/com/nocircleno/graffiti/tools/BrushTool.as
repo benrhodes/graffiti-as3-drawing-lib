@@ -1,5 +1,5 @@
 ﻿/*
-*  	Graffiti 2.5.6
+*  	Graffiti 3.0
 *  	______________________________________________________________________
 *  	www.nocircleno.com/graffiti/
 */
@@ -40,7 +40,7 @@ package com.nocircleno.graffiti.tools {
 	* @langversion 3.0
     * @playerversion Flash 10 AIR 1.5 
 	*/
-	final public class BrushTool extends BitmapTool {
+	public class BrushTool extends BitmapTool {
 		
 		// store local references for performance reasons
 		private const sin:Function = Math.sin;
@@ -74,7 +74,7 @@ package com.nocircleno.graffiti.tools {
 		* </listing>
 		* 
 		*/
-		public function BrushTool(brushSize:Number = 4, brushColor:uint = 0x000000, brushAlpha:Number = 1, brushBlur:Number = 0, brushType:String = null, toolMode:String = null) {
+		public function BrushTool(brushSize:Number = 4, brushColor:uint = 0x000000, brushAlpha:Number = 1, brushBlur:Number = 0, brushType:String = null, toolMode:String = null, objectDrawingMode:Boolean = false) {
 			
 			// set render type
 			_renderType = ToolRenderType.CONTINUOUS;
@@ -96,6 +96,9 @@ package com.nocircleno.graffiti.tools {
 			
 			// store mode
 			mode = toolMode;
+			
+			// store object drawing mode
+			_objectDrawingMode = objectDrawingMode;
 			
 		}
 		
@@ -180,6 +183,43 @@ package com.nocircleno.graffiti.tools {
 			} else {
 				_type = BrushType.SQUARE;
 			}
+			
+		}
+		
+		/**
+		* The <code>getBrushDefinition</code> method returns the brush mark data. This is used
+		* with object drawing mode.
+		* 
+		* @return The brush definition.
+		*
+		*/
+		public function getBrushDefinition():BrushDefinition {
+			
+			var numDrawingData:int = drawingData.length;
+			
+			// determine the the lowest position
+			for (var i:int = 0; i < numDrawingData; i += 2) {
+				
+				if (drawingData[i] < _upperCornerBounds.x) {
+					_upperCornerBounds.x = drawingData[i];
+				}
+				
+				if (drawingData[i + 1] < _upperCornerBounds.y) {
+					_upperCornerBounds.y = drawingData[i + 1];
+				}
+				
+			}
+			
+			// adjust all data points so they are in a local symbol space
+			// where the farthest upper left point becomes 0, 0
+			for (i = 0; i < numDrawingData; i += 2) {
+				
+				drawingData[i] -= _upperCornerBounds.x;
+				drawingData[i+1] -= _upperCornerBounds.y;
+				
+			}
+			
+			return new BrushDefinition(_type, _color, _alpha, _size, _blur, commands, drawingData, new Point(_upperCornerBounds.x, _upperCornerBounds.y));
 			
 		}
 		

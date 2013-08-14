@@ -78,7 +78,7 @@ package com.nocircleno.graffiti {
 	* Once you've created an instance of the GraffitiCanvas Class you can assign
 	* different tools to the canvas.
 	*
-	* <p>2.5 Features:
+	* <p>Features:
 	* <ul>
 	*	  <li>Create a drawing area up to 4095x4095 pixels.</li>
 	*	  <li>Brush Tool providing 7 different Brush shapes with transparency and blur.</li>
@@ -101,9 +101,6 @@ package com.nocircleno.graffiti {
 		
 		public static const HISTORY_LENGTH_CHANGE:String = "historyLengthChange";
 		
-		private const MAX_WIDTH:uint = 4095;
-		private const MAX_HEIGHT:uint = 4095;
-		private const MAX_BITMAP_DIM:uint = 5500;
 		private const OBJECT_NUDGE_AMOUNT:uint = 1;
 		private const OBJECT_SHIFT_NUDGE_AMOUNT:uint = 5;
 		
@@ -592,7 +589,7 @@ package com.nocircleno.graffiti {
 			
 			if(_history != null) {
 			
-				if(_historyPosition != _history.length - 1) {
+				if(_historyPosition < _history.length - 1) {
 					_historyPosition++;
 					
 					restoreFromHistory();
@@ -1152,13 +1149,9 @@ package com.nocircleno.graffiti {
 					  zoom level are within the bounds.
 		***************************************************************************/
 		private function checkPropertyLimits():void {
-			
-			// check bounds of canvas width and height
-			_canvasWidth = _canvasWidth <= MAX_WIDTH ? _canvasWidth : MAX_WIDTH;
-			_canvasHeight = _canvasHeight <= MAX_HEIGHT ? _canvasHeight : MAX_HEIGHT;
-			
+					
 			// calculate max zoom to avoid bitmap display problems
-			_maxZoom = Math.floor(MAX_BITMAP_DIM/Math.max(_canvasWidth, _canvasHeight));
+			_maxZoom = Math.floor(Math.max(_canvasWidth, _canvasHeight));
 			
 			// check zoom to make sure if not greater then max zoom
 			if(_zoom > _maxZoom) {

@@ -39,6 +39,8 @@ package com.nocircleno.graffiti.tools {
 	*/
 	final public class LineTool extends BitmapTool {
 		
+		private const MIN_SHAPE_SIZE_FOR_OBJECT:int = 2;
+		
 		// store local references for performance reasons
 		private const sin:Function = Math.sin;
 		private const cos:Function = Math.cos;
@@ -64,6 +66,7 @@ package com.nocircleno.graffiti.tools {
 		* @param lineColor Line Color.
 		* @param lineType Type of Line.
 		* @param toolMode Tool mode the Line will be drawing with.
+		* @param objectDrawingMode 
 		* 
 		* @example The following code creates a Line instance.
 		* <listing version="3.0" >
@@ -71,7 +74,7 @@ package com.nocircleno.graffiti.tools {
 		* var dottedLine:Line = new Line(8, 0xFF0000, 1, LineType.DOTTED);
 		* </listing>
 		*/
-		public function LineTool(lineWidth:Number = 4, lineColor:uint = 0x000000, lineAlpha:Number = 1, lineType:String = null, toolMode:String = null) {
+		public function LineTool(lineWidth:Number = 4, lineColor:uint = 0x000000, lineAlpha:Number = 1, lineType:String = null, toolMode:String = null, objectDrawingMode:Boolean = false) {
 			
 			// set render type
 			_renderType = ToolRenderType.CLICK_DRAG;
@@ -90,6 +93,26 @@ package com.nocircleno.graffiti.tools {
 			
 			// store mode
 			mode = toolMode;
+			
+			// store object drawing mode
+			_objectDrawingMode = objectDrawingMode;
+			
+		}
+		
+		/**
+		* Type of Layer the tool will draw to.
+		*/
+		override public function get layerType():String {
+		
+			var layer:String;
+			
+			if (_objectDrawingMode) {
+				layer = LayerType.OBJECT_LAYER;
+			} else {
+				layer = LayerType.DRAWING_LAYER;
+			}
+			
+			return layer;
 			
 		}
 		
@@ -150,6 +173,71 @@ package com.nocircleno.graffiti.tools {
 				_type = LineType.SOLID;
 			}
 			
+		}
+		
+		/**
+		* The <code>getLineDefinition</code> method returns the line data. This is used
+		* with object drawing mode.
+		* 
+		* @return The Line definition.
+		*
+		*/
+		public function getLineDefinition():LineDefinition {
+			
+			var numDrawingData:int = drawingData.length;
+			
+			var lineValidWidth:Boolean = false;
+			var lineValidHeight:Boolean = false;
+			
+			// determine the the lowest position
+			for (var i:int = 0; i < numDrawingData; i += 2) {
+				
+				if (drawingData[i] < _upperCornerBounds.x) {
+					_upperCornerBounds.x = drawingData[i];
+				}
+				
+				if(drawingData[i] > _lowerRightCornerBounds.x) {
+					_lowerRightCornerBounds.x = drawingData[i];
+				}
+				
+				if (drawingData[i + 1] < _upperCornerBounds.y) {
+					_upperCornerBounds.y = drawingData[i + 1];
+				}
+				
+				if(drawingData[i + 1] > _lowerRightCornerBounds.y) {
+					_lowerRightCornerBounds.y = drawingData[i + 1];
+				}
+				
+			}
+			
+			// calculate real width and height
+			var realWidth:Number = _lowerRightCornerBounds.x - _upperCornerBounds.x;
+			var realHeight:Number = _lowerRightCornerBounds.y - _upperCornerBounds.y;
+			
+			// adjust all data points so they are in a local symbol space
+			// where the farthest upper left point becomes 0, 0
+			for (i = 0; i < numDrawingData; i += 2) {
+				
+				drawingData[i] -= _upperCornerBounds.x;
+				drawingData[i + 1] -= _upperCornerBounds.y;
+				
+				if (drawingData[i] > MIN_SHAPE_SIZE_FOR_OBJECT) {
+					lineValidWidth = true;
+				}
+				
+				if (drawingData[i + 1] > MIN_SHAPE_SIZE_FOR_OBJECT) {
+					lineValidHeight = true;
+				}
+				
+			}
+			
+			var lineDef:LineDefinition;
+			
+			if (lineValidWidth || lineValidHeight) {
+				lineDef = new LineDefinition(_type, _color, _alpha, _lineWidth, realWidth, realHeight, commands, drawingData, new Point(_upperCornerBounds.x, _upperCornerBounds.y));
+			}
+			
+			return lineDef;
 		}
 		
 		/**

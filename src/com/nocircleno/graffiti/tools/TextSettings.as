@@ -64,7 +64,7 @@ package com.nocircleno.graffiti.tools
 			
 			// store properties
 			this.font = font;
-			this.textFormat = textFormat;
+			this.textFormat = new TextFormat(textFormat.font, textFormat.size, textFormat.color);
 			_backgroundColor = backgroundColor;
 			_borderColor = borderColor;
 			
@@ -91,7 +91,7 @@ package com.nocircleno.graffiti.tools
 			
 			// update text format object if exist
 			if (_textFormat != null) {
-				_textFormat.font = _font.fontName;	
+				_textFormat.font = _font.fontName;
 			}
 			
 		}

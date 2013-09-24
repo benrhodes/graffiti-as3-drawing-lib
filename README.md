@@ -1,5 +1,5 @@
 # Graffiti: ActionScript 3 Bitmap Drawing Library
-**Version 3.0.1**
+**Version 3.0.3**
 
 The Graffiti AS3 Bitmap Drawing Library is designed for ActionScript developers to easily integrate drawing functionality into a Flash, Flex or Air project.
 

@@ -78,7 +78,7 @@ package com.nocircleno.graffiti {
 	* Once you've created an instance of the GraffitiCanvas Class you can assign
 	* different tools to the canvas.
 	*
-	* <p>Features:
+	* <p>2.5 Features:
 	* <ul>
 	*	  <li>Create a drawing area up to 4095x4095 pixels.</li>
 	*	  <li>Brush Tool providing 7 different Brush shapes with transparency and blur.</li>
@@ -589,7 +589,7 @@ package com.nocircleno.graffiti {
 			
 			if(_history != null) {
 			
-				if(_historyPosition < _history.length - 1) {
+				if(_historyPosition != _history.length - 1) {
 					_historyPosition++;
 					
 					restoreFromHistory();
@@ -1149,7 +1149,7 @@ package com.nocircleno.graffiti {
 					  zoom level are within the bounds.
 		***************************************************************************/
 		private function checkPropertyLimits():void {
-					
+			
 			// calculate max zoom to avoid bitmap display problems
 			_maxZoom = Math.floor(Math.max(_canvasWidth, _canvasHeight));
 			

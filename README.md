@@ -1,3 +1,5 @@
+# This code is not maintained anymore now that Flash is just a good memory
+
 # Graffiti: ActionScript 3 Bitmap Drawing Library
 **Version 3.0.3**
 
@@ -19,10 +21,3 @@ The Graffiti AS3 Bitmap Drawing Library is designed for ActionScript developers 
 * Get color value for a point on the drawing.		 
 * Easily retrieve drawing data to use with your favorite image encoder.		
 * UI independent code that fits invisibly into any project.
-
-More information can be found at <http://www.nocircleno.com/graffiti/>
-
-## Documentation
-
-[Online AS Docs](http://www.nocircleno.com/graffiti/docs/3.0/ "Online AS Docs")
-
